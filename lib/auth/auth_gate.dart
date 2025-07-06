@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:graduate/screens/patient_home.dart';
 import 'package:graduate/screens/sign_in.dart';
 
 
@@ -15,7 +14,6 @@ class AuthGate extends StatelessWidget {
         builder: (context,snapshot){
           //user is logged in
           if(snapshot.hasData){
-            return PatientHome();
           }else{
             return SignIn();
           }
