@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:graduate/auth/auth_service.dart';
 import 'package:get/get.dart';
-import 'package:graduate/screens/chat_screen.dart';
+import 'package:graduate/screens/chats_screen.dart';
 import 'package:graduate/screens/sign_in.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
