@@ -8,7 +8,7 @@ class Chats extends StatelessWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Center(child: Text("I will modify this tonight..."),)
+        Center(child: Text("I will modify this screen tonight..."),)
       ],
     );
   }
