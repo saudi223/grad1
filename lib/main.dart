@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:graduate/my_binding.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:graduate/screens/home.dart';
+import 'package:graduate/screens/profile.dart';
 import 'package:graduate/welcome_screens/Page1.dart';
 import 'firebase_options.dart';
 import 'package:get/get.dart';
@@ -31,7 +33,7 @@ class MyApp extends StatelessWidget {
           home: child,
         );
       },
-      child:Page1()
+      child:Home()
     );
   }
 }

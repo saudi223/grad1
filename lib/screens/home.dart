@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:graduate/auth/auth_service.dart';
 import 'package:get/get.dart';
+import 'package:graduate/screens/chat_screen.dart';
 import 'package:graduate/screens/sign_in.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -14,7 +15,6 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-
   static const List<Widget> _widgetOptions = <Widget>[
     Text(
       'HOME PAGE',
@@ -22,17 +22,15 @@ class _HomeState extends State<Home> {
     Text(
       'COURSE PAGE',
     ),
-    Text(
-      'CONTACT GFG',
-    ),
+    Chats()
   ];
 
-
-  void logout(){
-    final _auth=AuthService();
+  void logout() {
+    final _auth = AuthService();
     _auth.signOut();
-    Get.to(()=>SignIn());
+    Get.to(() => SignIn());
   }
+
   int _currentIndex = 0;
 
   void _onItemTapped(int index) {
@@ -44,27 +42,55 @@ class _HomeState extends State<Home> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      bottomNavigationBar: BottomNavigationBar(items:[
-        BottomNavigationBarItem(icon: Icon(Icons.medical_services_outlined,color: Colors.black,),label: "doctors",),
-        BottomNavigationBarItem(icon: Icon(Icons.live_tv_outlined,color: Colors.black,),label: "Stream"),
-        BottomNavigationBarItem(icon: Icon(Icons.chat_outlined,color: Colors.black,),label: "chat",)
-
-      ],
+      bottomNavigationBar: BottomNavigationBar(
+        items: [
+          BottomNavigationBarItem(
+            activeIcon: Icon(
+              Icons.medical_services_outlined,
+              color: Colors.blue,
+            ),
+            icon: Icon(
+              Icons.medical_services_outlined,
+              color: Colors.black,
+            ),
+            label: "doctors",
+          ),
+          BottomNavigationBarItem(
+            activeIcon: Icon(
+              Icons.live_tv_outlined,
+              color: Colors.blue,
+            ),
+              icon: Icon(
+                Icons.live_tv_outlined,
+                color: Colors.black,
+              ),
+              label: "Stream"),
+          BottomNavigationBarItem(
+            activeIcon: Icon(
+              Icons.chat_outlined,
+              color: Colors.blue,
+            ),
+            icon: Icon(
+              Icons.chat_outlined,
+              color: Colors.black,
+            ),
+            label: "chat",
+          )
+        ],
         onTap: _onItemTapped,
         currentIndex: _currentIndex,
+        selectedItemColor: Colors.blueAccent,
       ),
       drawer: Drawer(
         width: 250.w,
       ),
       appBar: AppBar(
         title: Text("Home"),
-        actions: [
-          IconButton(onPressed:logout, icon: Icon(Icons.logout))
-        ],
+        actions: [IconButton(onPressed: logout, icon: Icon(Icons.logout))],
       ),
       body: Center(
         child: _widgetOptions.elementAt(_currentIndex),
-    ),
+      ),
     );
   }
 }
