@@ -117,11 +117,26 @@ class _ChatsState extends State<Chats> {
                 : error != null
                     ? Center(child: Text(error!))
                     : doctors.isEmpty
-                        ? Center(
-                            child: Image.asset(
-                            'assets/images/nobookeddoctors.png',
-                            color: Colors.blueAccent,
-                          ))
+                        ? Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Image.asset(
+                                'assets/images/nobookeddoctors.png',
+                                color: Colors.blueAccent,
+                              ),
+                              SizedBox(
+                                height: 10,
+                              ),
+                              Text(
+                                'No Booked Doctors!',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blueAccent,
+                                ),
+                              )
+                            ],
+                          )
                         : ListView.separated(
                             padding: EdgeInsets.symmetric(vertical: 10),
                             itemBuilder: (context, index) {
@@ -133,7 +148,7 @@ class _ChatsState extends State<Chats> {
                                           null
                                       ? NetworkImage(doctor['profile_image'])
                                       : AssetImage(
-                                          'assets/images/profile-icon-design-free-vector.jpg',
+                                          'assets/images/male-doctor-smiling-happy-face-600nw-2481032615.webp',
                                         ) as ImageProvider,
                                 ),
                                 title: Column(

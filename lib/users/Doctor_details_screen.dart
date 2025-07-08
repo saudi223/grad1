@@ -55,7 +55,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                 radius: 60,
                 backgroundImage: widget.doctorData['profile_image'] != null
                     ? NetworkImage(widget.doctorData['profile_image'])
-                    : AssetImage('assets/images/profile-icon-design-free-vector.jpg') as ImageProvider,
+                    : AssetImage('assets/images/male-doctor-smiling-happy-face-600nw-2481032615.webp') as ImageProvider,
               ),
             ),
             SizedBox(height: 20),

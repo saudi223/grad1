@@ -43,13 +43,17 @@ class _DoctorCardState extends State<DoctorCard> {
       margin: EdgeInsets.symmetric(vertical: 8),
       child: ListTile(
         leading: CircleAvatar(
+          radius: 25,
           backgroundImage: widget.doctorData['profile_image'] != null
               ? NetworkImage(widget.doctorData['profile_image'])
-              : AssetImage('assets/images/profile-icon-design-free-vector.jpg')
+              : AssetImage('assets/images/male-doctor-smiling-happy-face-600nw-2481032615.webp')
                   as ImageProvider,
         ),
-        title: Text(widget.doctorData['name'] ?? 'Doctor'),
-        subtitle: Text(widget.doctorData['specialty'] ?? 'General'),
+        title: Text(widget.doctorData['name'] ?? 'Doctor', style: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 18,
+        ),),
+        subtitle: Text(widget.doctorData['role'] ?? 'General'),
         trailing: Icon(Icons.arrow_forward),
         onTap: () {
           print('👤 Current UserID is $userId');

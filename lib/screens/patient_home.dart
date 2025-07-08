@@ -9,7 +9,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:graduate/users/doctor_card.dart';
 
-
 class PatientHome extends StatefulWidget {
   const PatientHome({super.key});
 
@@ -49,7 +48,8 @@ class _PatientHomeState extends State<PatientHome> {
         backgroundColor: Colors.white,
         items: [
           BottomNavigationBarItem(
-            activeIcon: Icon(Icons.medical_services_outlined, color: Colors.blue),
+            activeIcon:
+                Icon(Icons.medical_services_outlined, color: Colors.blue),
             icon: Icon(Icons.medical_services_outlined, color: Colors.black),
             label: "Doctors",
           ),
@@ -70,17 +70,17 @@ class _PatientHomeState extends State<PatientHome> {
       ),
       appBar: AppBar(
         iconTheme: IconThemeData(
-
           size: 35.r,
-          color: Color(0xff0F67FE)
         ),
-        backgroundColor: Color(0xff242E49),
-        title: Text("Home", style: TextStyle(fontSize: 30, color: Color(0xff0F67FE))),
+         elevation: 5,
+        title: Text(
+          "Home",
+          style: TextStyle(
+            fontSize: 30,
+          ),
+        ),
         actions: [
-          IconButton(
-              onPressed: logout,
-              icon: Icon(Icons.logout, color: Color(0xff0F67FE), size: 30.r)
-          )
+          IconButton(onPressed: logout, icon: Icon(Icons.logout, size: 30.r))
         ],
       ),
       body: _widgetOptions.elementAt(_currentIndex),
@@ -97,7 +97,8 @@ class DoctorsListScreen extends StatelessWidget {
           .where('role', isEqualTo: 'doctor')
           .snapshots(),
       builder: (context, snapshot) {
-        if (snapshot.hasError) return Center(child: Text('Error loading doctors'));
+        if (snapshot.hasError)
+          return Center(child: Text('Error loading doctors'));
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator());
         }

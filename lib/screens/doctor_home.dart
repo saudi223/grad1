@@ -27,7 +27,6 @@ class _DoctorHomeState extends State<DoctorHome> {
         width: 250.w,
       ),
       appBar: AppBar(
-        backgroundColor: Color(0xff242E49),
         title: Text(
           "Home",
           style: TextStyle(fontSize: 30, color: Color(0xff0F67FE)),
