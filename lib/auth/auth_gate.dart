@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:graduate/screens/sign_in.dart';
 
-
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
 
@@ -11,12 +10,10 @@ class AuthGate extends StatelessWidget {
     return Scaffold(
       body: StreamBuilder(
         stream: FirebaseAuth.instance.authStateChanges(),
-        builder: (context,snapshot){
+        builder: (context, snapshot) {
           //user is logged in
-          if(snapshot.hasData){
-          }else{
-            return SignIn();
-          }
+          if (snapshot.hasData) {}
+          return SignIn();
         },
       ),
     );
