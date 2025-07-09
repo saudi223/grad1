@@ -14,7 +14,6 @@ class DoctorHome extends StatefulWidget {
 }
 
 class _DoctorHomeState extends State<DoctorHome> {
-
   void logout() {
     final _auth = AuthService();
     _auth.signOut();
@@ -24,14 +23,24 @@ class _DoctorHomeState extends State<DoctorHome> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-    drawer: Drawer(
-    width: 250.w,
-    ),
-    appBar: AppBar(
-    backgroundColor: Color(0xff242E49),
-    title:Text("Home",style:TextStyle(fontSize: 30,color: Color(0xff0F67FE)),),
-    actions: [IconButton(onPressed: logout, icon: Icon(Icons.logout,color: Color(0xff0F67FE),size: 30.r,))],
-    ),
+      drawer: Drawer(
+        width: 250.w,
+      ),
+      appBar: AppBar(
+        title: Text(
+          "Home",
+          style: TextStyle(fontSize: 30, color: Color(0xff0F67FE)),
+        ),
+        actions: [
+          IconButton(
+              onPressed: logout,
+              icon: Icon(
+                Icons.logout,
+                color: Color(0xff0F67FE),
+                size: 30.r,
+              ))
+        ],
+      ),
     );
   }
 }
