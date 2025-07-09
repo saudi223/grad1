@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:graduate/auth/auth_service.dart';
 import 'package:get/get.dart';
 import 'package:graduate/screens/chats_screen.dart';
-import 'package:graduate/grad1/screens/news.dart';
 import 'package:graduate/screens/sign_in.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
