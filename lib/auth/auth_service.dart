@@ -1,4 +1,3 @@
-import 'dart:ffi';
 
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -26,32 +25,47 @@ class AuthService extends GetxController {
   }
 
   Future<UserCredential> signUpWithEmailPassword(
-  String email,
-  String password, {
-  required String role,
-  }) async {
-  try {
-  UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-  email: email,
-  password: password,
-  );
+      String email,
+      String password, {
+        required String role, // Must be either 'patient' or 'doctor'
+      }) async {
+    try {
+      // 1. Create user in Firebase Auth
+      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
-  await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
-  'email': email,
-  'role': role,
-  'createdAt': FieldValue.serverTimestamp(),
-  'uid': userCredential.user!.uid,
-  });
+      final userId = userCredential.user!.uid;
+      final userData = {
+        'email': email,
+        'role': role,
+        'createdAt': FieldValue.serverTimestamp(),
+        'uid': userId,
+      };
 
-  return userCredential;
+      // 2. Save user data in the correct Firestore collection
+      if (role == 'patient') {
+        await FirebaseFirestore.instance
+            .collection('patients')
+            .doc(userId)
+            .set(userData);
+      } else if (role == 'doctor') {
+        await FirebaseFirestore.instance
+            .collection('doctors')
+            .doc(userId)
+            .set(userData);
+      } else {
+        throw Exception('Invalid role. Must be "patient" or "doctor".');
+      }
 
-  } on FirebaseAuthException catch (e) {
-  throw Exception(e.code);
-  } catch (e) {
-  throw Exception('An error occurred during sign up');
+      return userCredential;
+    } on FirebaseAuthException catch (e) {
+      throw Exception(e.code);
+    } catch (e) {
+      throw Exception('An error occurred during sign up: $e');
+    }
   }
-  }
-
 
   Future<void> signOut() async {
     return await _auth.signOut();

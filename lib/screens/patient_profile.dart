@@ -90,31 +90,27 @@ class _PatientProfileState extends State<PatientProfile> {
 
   Future<String?> uploadProfileImage(File imageFile) async {
     try {
-      String fileName =
-          'profile_${DateTime.now().millisecondsSinceEpoch}${path.extension(imageFile.path)}';
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) throw Exception("User not logged in");
 
+      // Updated path: patients/{patientId}/profile_images/{filename}
+      String fileName = 'profile_${DateTime.now().millisecondsSinceEpoch}${path.extension(imageFile.path)}';
       Reference storageRef = FirebaseStorage.instance
           .ref()
-          .child('profile_images')
-          .child(fileName);
+          .child('patients/$userId/profile_images/$fileName'); // <-- Updated path
 
       await storageRef.putFile(imageFile);
       return await storageRef.getDownloadURL();
     } catch (e) {
-      print('Failed to upload image: $e');
+      print('Image upload failed: $e');
       return null;
     }
   }
 
   Future<void> saveProfile(BuildContext context) async {
-    if (!_formkey.currentState!.validate()) return;
+    if (!_formkey.currentState!.validate() || _isSaving) return;
 
-    if (_isSaving) return;
-
-    setState(() {
-      _isSaving = true;
-    });
-
+    setState(() => _isSaving = true);
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -122,17 +118,16 @@ class _PatientProfileState extends State<PatientProfile> {
     );
 
     try {
-      String? imageUrl;
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) throw Exception("User not authenticated");
 
+      // Upload image if selected
+      String? imageUrl;
       if (_imageFile != null) {
         imageUrl = await uploadProfileImage(_imageFile!);
       }
 
-      final userId = FirebaseAuth.instance.currentUser?.uid;
-      if (userId == null) {
-        throw Exception("User not authenticated");
-      }
-
+      // Patient-specific data
       final profileData = {
         'name': nameController.text.trim(),
         'blood_type': bloodTypeController.text.trim(),
@@ -143,21 +138,18 @@ class _PatientProfileState extends State<PatientProfile> {
         'camera_ip': cameraIpController.text.trim(),
         'updated_at': FieldValue.serverTimestamp(),
         'created_at': FieldValue.serverTimestamp(),
+        if (imageUrl != null) 'profile_image': imageUrl,
       };
 
-      if (imageUrl != null) {
-        profileData['profile_image'] = imageUrl;
-      }
-
-      // Save to Firestore and wait for completion
+      // Save to the 'patients' collection instead of 'users'
       await FirebaseFirestore.instance
-          .collection('users')
+          .collection('patients')  // <-- Updated collection
           .doc(userId)
           .set(profileData, SetOptions(merge: true));
 
-      // Verify the data was saved
-      DocumentSnapshot doc = await FirebaseFirestore.instance
-          .collection('users')
+      // Verify save was successful
+      final doc = await FirebaseFirestore.instance
+          .collection('patients')  // <-- Updated collection
           .doc(userId)
           .get();
 
@@ -168,17 +160,15 @@ class _PatientProfileState extends State<PatientProfile> {
           MaterialPageRoute(builder: (context) => PatientHome()),
         );
       } else {
-        throw Exception("Failed to save user data");
+        throw Exception("Failed to save patient profile");
       }
     } catch (e) {
       Navigator.pop(context); // Close loading dialog
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error saving profile: ${e.toString()}")),
+        SnackBar(content: Text("Error: ${e.toString().replaceAll('Exception: ', '')}")),
       );
     } finally {
-      setState(() {
-        _isSaving = false;
-      });
+      setState(() => _isSaving = false);
     }
   }
 
@@ -363,7 +353,7 @@ class _PatientProfileState extends State<PatientProfile> {
                   ),
                 ),
                 Padding(padding: EdgeInsets.only(left: 100.r,top: 50.r),child:
-                Text("Doctor_Profile",style: TextStyle(
+                Text("Patient_profile",style: TextStyle(
                     fontSize: 30.r,color: Colors.white
                 ),))
               ],

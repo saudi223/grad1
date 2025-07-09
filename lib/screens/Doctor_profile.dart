@@ -4,7 +4,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:graduate/screens/doctor_home.dart';
-import 'package:graduate/screens/patient_home.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:graduate/widgets/Custom_button.dart';
@@ -87,31 +86,27 @@ class _DoctorProfileState extends State<DoctorProfile> {
 
   Future<String?> uploadProfileImage(File imageFile) async {
     try {
-      String fileName =
-          'profile_${DateTime.now().millisecondsSinceEpoch}${path.extension(imageFile.path)}';
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) throw Exception("User not logged in");
 
+      // Updated path: doctors/{doctorId}/profile_images/{filename}
+      String fileName = 'profile_${DateTime.now().millisecondsSinceEpoch}${path.extension(imageFile.path)}';
       Reference storageRef = FirebaseStorage.instance
           .ref()
-          .child('profile_images')
-          .child(fileName);
+          .child('doctors/$userId/profile_images/$fileName'); // <-- Updated path
 
       await storageRef.putFile(imageFile);
       return await storageRef.getDownloadURL();
     } catch (e) {
-      print('Failed to upload image: $e');
+      print('Image upload failed: $e');
       return null;
     }
   }
 
   Future<void> saveProfile(BuildContext context) async {
-    if (!_formkey.currentState!.validate()) return;
+    if (!_formkey.currentState!.validate() || _isSaving) return;
 
-    if (_isSaving) return;
-
-    setState(() {
-      _isSaving = true;
-    });
-
+    setState(() => _isSaving = true);
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -119,58 +114,53 @@ class _DoctorProfileState extends State<DoctorProfile> {
     );
 
     try {
-      String? imageUrl;
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) throw Exception("User not authenticated");
 
+      // Upload image if selected
+      String? imageUrl;
       if (_imageFile != null) {
         imageUrl = await uploadProfileImage(_imageFile!);
       }
 
-      final userId = FirebaseAuth.instance.currentUser?.uid;
-      if (userId == null) {
-        throw Exception("User not authenticated");
-      }
-
+      // Doctor-specific data
       final profileData = {
         'name': nameController.text.trim(),
         'phone_number': phoneController.text.trim(),
+        'specialty': specialtyController.text.trim(), // Added specialty field
         'updated_at': FieldValue.serverTimestamp(),
         'created_at': FieldValue.serverTimestamp(),
+        if (imageUrl != null) 'profile_image': imageUrl,
       };
 
-      if (imageUrl != null) {
-        profileData['profile_image'] = imageUrl;
-      }
 
-      // Save to Firestore and wait for completion
       await FirebaseFirestore.instance
-          .collection('users')
+          .collection('doctors')
           .doc(userId)
           .set(profileData, SetOptions(merge: true));
 
-      // Verify the data was saved
-      DocumentSnapshot doc = await FirebaseFirestore.instance
-          .collection('users')
+      // Verify save was successful
+      final doc = await FirebaseFirestore.instance
+          .collection('doctors')
           .doc(userId)
           .get();
 
       if (doc.exists) {
-        Navigator.pop(context); // Close loading dialog
+        Navigator.pop(context);
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => DoctorHome()),
         );
       } else {
-        throw Exception("Failed to save user data");
+        throw Exception("Failed to save doctor profile");
       }
     } catch (e) {
       Navigator.pop(context); // Close loading dialog
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error saving profile: ${e.toString()}")),
+        SnackBar(content: Text("Error: ${e.toString().replaceAll('Exception: ', '')}")),
       );
     } finally {
-      setState(() {
-        _isSaving = false;
-      });
+      setState(() => _isSaving = false);
     }
   }
 
