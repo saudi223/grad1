@@ -1,9 +1,10 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ChatPage extends StatefulWidget {
-  const ChatPage({super.key});
+  const ChatPage({super.key, required doctorId, required doctorName});
 
   @override
   State<ChatPage> createState() => _ChatPageState();
@@ -45,16 +46,16 @@ class _ChatPageState extends State<ChatPage> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        elevation: 5,
+        elevation: 5.r,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         titleSpacing: 0,
         title: Padding(
-          padding: const EdgeInsets.only(left: 0, bottom: 5),
+          padding:  EdgeInsets.only(left: 0, bottom: 5.r),
           child: Row(
             children: [
               CircleAvatar(
-                radius: 26,
+                radius: 26.r,
                 backgroundImage: AssetImage(
                   'assets/images/profile-icon-design-free-vector.jpg',
                 ),
@@ -67,14 +68,14 @@ class _ChatPageState extends State<ChatPage> {
                     'AHMED',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 18,
+                      fontSize: 18.r,
                     ),
                   ),
                   Text(
                     'Diabetic patient',
                     style: TextStyle(
                       color: Colors.grey,
-                      fontSize: 17,
+                      fontSize: 17.r,
                     ),
                   ),
                 ],

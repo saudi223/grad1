@@ -1,4 +1,4 @@
-// ignore_for_file: prefer_const_constructors, avoid_print
+// ignore_for_file: prefer_const_constructors
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -22,23 +22,22 @@ class HealthBanner extends StatefulWidget {
 
 class _HealthBannerState extends State<HealthBanner> {
   String? userId;
-  List<Map<String, dynamic>> doctors = [];
+  List<Map<String, dynamic>> bookedDoctors = [];
   bool isLoading = true;
   String? error;
 
   @override
   void initState() {
     super.initState();
-    _loadUserAndDoctors();
+    _loadUserAndBookedDoctors();
   }
 
-  Future<void> _loadUserAndDoctors() async {
+  Future<void> _loadUserAndBookedDoctors() async {
     try {
-      User? user = FirebaseAuth.instance.currentUser;
-
+      final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
         setState(() {
-          error = "⚠️ لا يوجد مستخدم مسجل دخول";
+          error = "⚠️ User not logged in";
           isLoading = false;
         });
         return;
@@ -48,27 +47,42 @@ class _HealthBannerState extends State<HealthBanner> {
         userId = user.uid;
       });
 
-      final snapshot = await FirebaseFirestore.instance
-          .collection('users')
+      // Get references to booked doctors from patients collection
+      final bookedDoctorsSnapshot = await FirebaseFirestore.instance
+          .collection('patients')
           .doc(user.uid)
-          .collection('doctors')
+          .collection('booked_doctors')
           .get();
 
-      List<Map<String, dynamic>> fetchedDoctors = snapshot.docs.map((doc) {
-        final data = doc.data();
-        data['doctorId'] = doc.id;
-        return data;
+      // Fetch complete doctor data for each booked doctor
+      final doctorFutures = bookedDoctorsSnapshot.docs.map((doc) async {
+        final doctorDoc = await FirebaseFirestore.instance
+            .collection('doctors')
+            .doc(doc.id)
+            .get();
+
+        if (doctorDoc.exists) {
+          return {
+            ...doctorDoc.data() as Map<String, dynamic>,
+            'booking_id': doc.id,  // Keep reference to booking document
+          };
+        }
+        return null;
       }).toList();
 
+      final fetchedDoctors = (await Future.wait(doctorFutures))
+          .whereType<Map<String, dynamic>>()
+          .toList();
+
       setState(() {
-        doctors = fetchedDoctors;
+        bookedDoctors = fetchedDoctors;
         isLoading = false;
       });
     } catch (e) {
-      print('❌ Error: $e');
+      print('❌ Error loading booked doctors: $e');
       setState(() {
+        error = "Error loading appointments";
         isLoading = false;
-        error = "حدث خطأ أثناء تحميل البيانات";
       });
     }
   }
@@ -125,7 +139,7 @@ class _HealthBannerState extends State<HealthBanner> {
                   ),
                   SizedBox(height: 12),
                   if (isLoading)
-                    Container()
+                    CircularProgressIndicator(color: Colors.white)
                   else if (error != null)
                     Text(
                       error!,
@@ -137,10 +151,11 @@ class _HealthBannerState extends State<HealthBanner> {
                     )
                   else
                     Text(
-                      'Number of booked doctors: (${doctors.length})',
+                      'Booked Doctors: ${bookedDoctors.length}',
                       style: TextStyle(
                         color: Colors.greenAccent,
                         fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                 ],

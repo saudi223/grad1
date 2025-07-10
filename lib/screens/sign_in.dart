@@ -37,54 +37,74 @@ class _SignInState extends State<SignIn> {
         _pwController.text.trim(),
       );
 
-      // Get user role from Firestore after successful login
+      // Get user role after successful login
       final userId = FirebaseAuth.instance.currentUser?.uid;
       if (userId != null) {
-        final doc = await FirebaseFirestore.instance
-            .collection('users')
+        // Check both collections to determine user role
+        final doctorDoc = await FirebaseFirestore.instance
+            .collection('doctors')
             .doc(userId)
             .get();
 
-        if (doc.exists) {
-          final role = doc.data()?['role'] ?? 'patient'; // Default to patient if role not found
-
+        if (doctorDoc.exists) {
           if (mounted) {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(
-                builder: (context) => role == 'doctor'
-                    ? DoctorHome() // Replace with your DoctorHome screen
-                    : PatientHome(),
-              ),
+              MaterialPageRoute(builder: (context) => DoctorHome()),
             );
           }
-        } else {
-          throw Exception("User data not found");
+          return;
         }
-      }
-    }  on FirebaseAuthException catch (e) {
-      String errorMessage = 'An error occurred';
-      if (e.code == 'user-not-found') {
-        errorMessage = 'No user found with this email';
-      } else if (e.code == 'wrong-password') {
-        errorMessage = 'Incorrect password';
-      } else if (e.code == 'invalid-email') {
-        errorMessage = 'Invalid email format';
-      } else if (e.code == 'user-disabled') {
-        errorMessage = 'This account has been disabled';
-      }
 
+        final patientDoc = await FirebaseFirestore.instance
+            .collection('patients')
+            .doc(userId)
+            .get();
+
+        if (patientDoc.exists) {
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => PatientHome()),
+            );
+          }
+          return;
+        }
+
+        // If not found in either collection
+        throw Exception("User data not found in any role collection");
+      }
+    } on FirebaseAuthException catch (e) {
+      final errorMessage = _getFirebaseAuthErrorMessage(e);
       if (mounted) {
         _showErrorDialog("Sign In Error", errorMessage);
       }
-    }  catch (e) {
+    } catch (e) {
       if (mounted) {
-        _showErrorDialog("Sign In Error", e.toString());
+        _showErrorDialog("Sign In Error",
+            e.toString().replaceAll('Exception: ', ''));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+  String _getFirebaseAuthErrorMessage(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'user-not-found':
+        return 'No user found with this email';
+      case 'wrong-password':
+        return 'Incorrect password';
+      case 'invalid-email':
+        return 'Invalid email format';
+      case 'user-disabled':
+        return 'This account has been disabled';
+      case 'too-many-requests':
+        return 'Too many attempts. Try again later';
+      default:
+        return 'Login failed: ${e.message}';
+    }
+  }
+
 
   void _showErrorDialog(String title, String message) {
     showDialog(

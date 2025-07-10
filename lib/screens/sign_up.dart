@@ -3,6 +3,8 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:graduate/auth/auth_service.dart';
 import 'package:graduate/screens/Doctor_profile.dart';
 import 'package:graduate/screens/patient_profile.dart';
@@ -95,27 +97,58 @@ class _SignUpState extends State<SignUp> {
 
     try {
       final auth = AuthService();
-      await auth.signUpWithEmailPassword(
+      final userCredential = await auth.signUpWithEmailPassword(
         _emailController.text.trim(),
         _pwController.text.trim(),
-
-        role: _selectedRole.toString().split('.').last, // Send role to auth service
+        role: _selectedRole.toString().split('.').last,
       );
 
-      // If signup is successful, navigate to appropriate profile page
+      final userId = userCredential.user?.uid;
+      if (userId == null) throw Exception("User creation failed");
+
+      final role = _selectedRole.toString().split('.').last;
+      final userData = {
+        'email': _emailController.text.trim(),
+        'role': role,
+        'createdAt': FieldValue.serverTimestamp(),
+      };
+
+      // Save to the appropriate collection
+      final collection = role == 'doctor'
+          ? FirebaseFirestore.instance.collection('doctors')
+          : FirebaseFirestore.instance.collection('patients');
+
+      await collection.doc(userId).set(userData);
+
+      // Also maintain a users collection for easy queries if needed
+      await FirebaseFirestore.instance.collection('users').doc(userId).set({
+        'email': _emailController.text.trim(),
+        'role': role,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      // Navigate to appropriate profile page
       if (mounted) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => _selectedRole == UserRole.doctor
-                ? DoctorProfile() // You'll need to import and create this
+                ? DoctorProfile()
                 : PatientProfile(),
           ),
         );
       }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        _showErrorDialog("Signup Error", _getFirebaseAuthErrorMessage(e));
+      }
+    } on FirebaseException catch (e) {
+      if (mounted) {
+        _showErrorDialog("Database Error", e.message ?? 'Failed to save user data');
+      }
     } catch (e) {
       if (mounted) {
-        _showErrorDialog("Signup Error", e.toString());
+        _showErrorDialog("Error", "An unexpected error occurred");
       }
     } finally {
       if (mounted) {
@@ -123,6 +156,20 @@ class _SignUpState extends State<SignUp> {
           _isLoading = false;
         });
       }
+    }
+  }
+  String _getFirebaseAuthErrorMessage(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'email-already-in-use':
+        return 'This email is already registered';
+      case 'invalid-email':
+        return 'Please enter a valid email address';
+      case 'weak-password':
+        return 'Password is too weak';
+      case 'operation-not-allowed':
+        return 'Email/password accounts are not enabled';
+      default:
+        return 'Signup failed: ${e.message}';
     }
   }
 
@@ -212,7 +259,8 @@ class _SignUpState extends State<SignUp> {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your email';
                           }
-                          if (!value.contains('@')) {
+                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                              .hasMatch(value)) {
                             return 'Please enter a valid email';
                           }
                           return null;
@@ -228,7 +276,7 @@ class _SignUpState extends State<SignUp> {
                         decoration: InputDecoration(
                           hintText: "*********",
                           labelText: "Password",
-                          prefixIcon: Icon(Icons.lock_outline, color: Color(0xff242E49)),
+                          prefixIcon: Icon(Icons.lock_outlined, color: Color(0xff242E49)),
                           border: OutlineInputBorder(),
                           focusedBorder: OutlineInputBorder(
                             borderSide: BorderSide(color: Colors.blue, width: 2.w),
@@ -236,21 +284,28 @@ class _SignUpState extends State<SignUp> {
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Please enter a password';
+                            return 'Please enter your password';
+                          }
+                          if (value.length < 6) {
+                            return 'Password must be at least 6 characters';
+                          }
+                          if (!value.contains(RegExp(r'[A-Z]'))) {
+                            return 'Include at least one uppercase letter';
+                          }
+                          if (!value.contains(RegExp(r'[0-9]'))) {
+                            return 'Include at least one number';
                           }
                           return null;
                         },
                       ),
-                      SizedBox(height: 40.h),
-
-                      // Confirm Password Field
+                      SizedBox(height: 60.h),
                       TextFormField(
                         controller: _confirmController,
                         obscureText: true,
                         decoration: InputDecoration(
                           hintText: "*********",
                           labelText: "Confirm Password",
-                          prefixIcon: Icon(Icons.lock_outline, color: Color(0xff242E49)),
+                          prefixIcon: Icon(Icons.lock_outlined, color: Color(0xff242E49)),
                           border: OutlineInputBorder(),
                           focusedBorder: OutlineInputBorder(
                             borderSide: BorderSide(color: Colors.blue, width: 2.w),
@@ -258,16 +313,21 @@ class _SignUpState extends State<SignUp> {
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Please confirm your password';
+                            return 'Please enter your password';
                           }
-                          if (value != _pwController.text) {
-                            return 'Passwords do not match';
+                          if (value.length < 6) {
+                            return 'Password must be at least 6 characters';
+                          }
+                          if (!value.contains(RegExp(r'[A-Z]'))) {
+                            return 'Include at least one uppercase letter';
+                          }
+                          if (!value.contains(RegExp(r'[0-9]'))) {
+                            return 'Include at least one number';
                           }
                           return null;
                         },
                       ),
                       SizedBox(height: 60.h),
-
                       // Sign Up Button
                       CustomButton(
                         the_text: _isLoading ? "Creating Account..." : "Sign Up",

@@ -27,11 +27,12 @@ class AuthService extends GetxController {
   Future<UserCredential> signUpWithEmailPassword(
       String email,
       String password, {
-        required String role, // Must be either 'patient' or 'doctor'
+        required String role,
       }) async {
     try {
       // 1. Create user in Firebase Auth
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+      UserCredential userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
@@ -41,29 +42,53 @@ class AuthService extends GetxController {
         'email': email,
         'role': role,
         'createdAt': FieldValue.serverTimestamp(),
-        'uid': userId,
       };
 
-      // 2. Save user data in the correct Firestore collection
-      if (role == 'patient') {
-        await FirebaseFirestore.instance
-            .collection('patients')
-            .doc(userId)
-            .set(userData);
-      } else if (role == 'doctor') {
-        await FirebaseFirestore.instance
-            .collection('doctors')
-            .doc(userId)
-            .set(userData);
-      } else {
-        throw Exception('Invalid role. Must be "patient" or "doctor".');
-      }
+      // 2. Save to the appropriate collection
+      final collection = role == 'doctor'
+          ? FirebaseFirestore.instance.collection('doctors')
+          : FirebaseFirestore.instance.collection('patients');
+
+      // 3. Use set() with merge: false to create the document
+      await collection.doc(userId).set(userData);
+
+      // 4. Also add to users collection for easy queries
+      await FirebaseFirestore.instance.collection('users').doc(userId).set(userData);
 
       return userCredential;
     } on FirebaseAuthException catch (e) {
-      throw Exception(e.code);
+      throw FirebaseAuthException(code: e.code, message: e.message);
     } catch (e) {
-      throw Exception('An error occurred during sign up: $e');
+      throw Exception('Signup failed: ${e.toString()}');
+    }
+  }
+  Future<void> startNewChat(String patientId, String doctorId) async {
+    try {
+      // 1. Add to patient's doctor_chats
+      await _firestore
+          .collection('patients')
+          .doc(patientId)
+          .collection('doctor_chats')
+          .doc(doctorId) // Use doctorId as the document ID
+          .set({
+        'lastMessage': '',
+        'timestamp': FieldValue.serverTimestamp(),
+        'unreadCount': 0,
+      });
+
+      // 2. (Optional) Add to doctor's patient_chats
+      await _firestore
+          .collection('doctors')
+          .doc(doctorId)
+          .collection('patient_chats')
+          .doc(patientId)
+          .set({
+        'lastMessage': '',
+        'timestamp': FieldValue.serverTimestamp(),
+        'unreadCount': 0,
+      });
+    } catch (e) {
+      throw Exception('Failed to start chat: $e');
     }
   }
 
