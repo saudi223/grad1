@@ -21,7 +21,27 @@ class Page2 extends StatelessWidget {
                 onPressed:onpress,
                 child: Image.asset("assets/images/Vector Stroke.png"),
               )
-                ,)
+                ,),
+              Padding(padding: EdgeInsets.only(left: 30.r,top: 70.r),child:Column(
+                children: [
+                  Text("Doctors checking. Patients healing.",style: TextStyle(
+                    fontSize:30.r,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),),
+                  SizedBox(
+                    height: 15.h,
+                  ),
+                  Text("Your doctor checked your records. Reply to continue the conversation about your care plan",
+                  style: TextStyle(
+                    fontSize:20.r,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.black38,
+                  ),
+                  )
+                ],
+              ) ,)
+
             ]
         )
     );

@@ -208,7 +208,7 @@ class _ChatsState extends State<Chats> {
             radius: 28,
             backgroundImage: doctor['profile_image'] != null
                 ? NetworkImage(doctor['profile_image'])
-                : AssetImage('assets/images/default_doctor.png') as ImageProvider,
+                : AssetImage('assets/images/male-doctor-smiling-happy-face-600nw-2481032615.webp') as ImageProvider,
           ),
           title: Text(
             doctor['name'] ?? 'Doctor',
@@ -242,9 +242,10 @@ class _ChatsState extends State<Chats> {
               context,
               MaterialPageRoute(
                 builder: (context) => ChatPage(
-                  doctorId: doctor['chat_id'],
-                  doctorName: doctor['name'],
-                ), // ChatPage
+                  receiverId: doctor['chat_id'],
+                  receiverName: doctor['name'],
+                  isDoctor: false,
+                )
               ), // MaterialPageRoute
             ).then((_) => _loadUserAndChats()); // Refresh when returning
           },

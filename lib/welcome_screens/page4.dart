@@ -22,7 +22,30 @@ class Page4 extends StatelessWidget {
                 onPressed:onpress,
                 child: Image.asset("assets/images/Vector Stroke.png"),
               )
-                ,)
+                ,),
+              Padding(padding: EdgeInsets.only(left: 20.r,top: 350.r),
+              child: Image.asset("assets/images/R.png",width: 320.w,height: 250.h,),
+              ),
+        Padding(padding: EdgeInsets.only(left: 30.r,top: 70.r),child:Column(
+          children: [
+            Text("Stay informed, stay healthy",style: TextStyle(
+              fontSize:30.r,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),),
+            SizedBox(
+              height: 15.h,
+            ),
+            Text("Your daily dose of medical updates and doctor insights—all in one place.",
+              style: TextStyle(
+                fontSize:20.r,
+                fontWeight: FontWeight.w400,
+                color: Colors.black38,
+              ),
+            )
+          ],
+        ) ,
+        )
             ]
         )
     );

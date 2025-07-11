@@ -1,5 +1,3 @@
-// ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables, sized_box_for_whitespace
-
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -37,16 +35,17 @@ class _SignInState extends State<SignIn> {
         _pwController.text.trim(),
       );
 
-      // Get user role after successful login
-      final userId = FirebaseAuth.instance.currentUser?.uid;
-      if (userId != null) {
-        // Check both collections to determine user role
-        final doctorDoc = await FirebaseFirestore.instance
+      // Get the signed-in user's email
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        // Check if email exists in doctors collection
+        final doctorQuery = await FirebaseFirestore.instance
             .collection('doctors')
-            .doc(userId)
+            .where('email', isEqualTo: user.email)
+            .limit(1)
             .get();
 
-        if (doctorDoc.exists) {
+        if (doctorQuery.docs.isNotEmpty) {
           if (mounted) {
             Navigator.pushReplacement(
               context,
@@ -56,23 +55,29 @@ class _SignInState extends State<SignIn> {
           return;
         }
 
+        // If not a doctor, check if patient exists or create new patient
         final patientDoc = await FirebaseFirestore.instance
             .collection('patients')
-            .doc(userId)
+            .doc(user.uid)
             .get();
 
-        if (patientDoc.exists) {
-          if (mounted) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => PatientHome()),
-            );
-          }
-          return;
+        if (!patientDoc.exists) {
+          // Create basic patient record if doesn't exist
+          await FirebaseFirestore.instance
+              .collection('patients')
+              .doc(user.uid)
+              .set({
+            'email': user.email,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
         }
 
-        // If not found in either collection
-        throw Exception("User data not found in any role collection");
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => PatientHome()),
+          );
+        }
       }
     } on FirebaseAuthException catch (e) {
       final errorMessage = _getFirebaseAuthErrorMessage(e);
@@ -88,6 +93,7 @@ class _SignInState extends State<SignIn> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+
   String _getFirebaseAuthErrorMessage(FirebaseAuthException e) {
     switch (e.code) {
       case 'user-not-found':
@@ -104,7 +110,6 @@ class _SignInState extends State<SignIn> {
         return 'Login failed: ${e.message}';
     }
   }
-
 
   void _showErrorDialog(String title, String message) {
     showDialog(

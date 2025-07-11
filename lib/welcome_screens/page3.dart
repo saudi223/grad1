@@ -22,7 +22,27 @@ class Page3 extends StatelessWidget {
                 onPressed:onpress,
                 child: Image.asset("assets/images/Vector Stroke.png"),
               )
-                ,)
+                ,),
+        Padding(padding: EdgeInsets.only(left: 30.r,top: 70.r),child:Column(
+          children: [
+            Text("Your doctor’s inbox, always open.",style: TextStyle(
+              fontSize:30.r,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),),
+            SizedBox(
+              height: 15.h,
+            ),
+            Text("Continue your care between visits. Message your doctor directly for personalized follow-ups.",
+              style: TextStyle(
+                fontSize:20.r,
+                fontWeight: FontWeight.w400,
+                color: Colors.black38,
+              ),
+            )
+          ],
+        ) ,
+        )
             ]
         )
     );

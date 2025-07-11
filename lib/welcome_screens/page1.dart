@@ -19,7 +19,7 @@ class Page1 extends StatelessWidget {
         body:
         Stack(
           children: [
-            Image.asset("assets/images/Welcome Screen.png",fit: BoxFit.cover,width: double.infinity.w),
+            Image.asset("assets/images/Welcome Screen (4).png",fit: BoxFit.cover,width: double.infinity.w),
             Padding(
               padding: EdgeInsets.only(left: 110.sp, top: 600.sp),
               child:CustomButton(the_text: "Get Started", on_tap: (){
@@ -61,8 +61,16 @@ class Page1 extends StatelessWidget {
                   ),
                 ]
             ))
-              ,)
-
+              ,),
+            Padding(padding: EdgeInsets.only(left: 80.r,top:50.r ),
+            child:Column(children: [Image.asset("assets/images/Monotone health plus.png") ,Text("Welcome to\nClinico",style: TextStyle(
+              fontSize: 40.r,
+              fontWeight: FontWeight.bold,
+              color: Color(0xff0F67FE)
+            ),textAlign: TextAlign.center,),
+            ]
+        )
+            )
           ],
         )
 

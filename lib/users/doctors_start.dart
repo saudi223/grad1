@@ -76,13 +76,13 @@ class _DoctorsStartState extends State<DoctorsStart> {
                   final isBooked = snapshot.data ?? false;
                   return ElevatedButton(
                     onPressed: () {
-                      // Navigate to chat screen with doctor details
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => ChatPage(
-                            doctorId: widget.doctorId,
-                            doctorName: widget.doctorData['name'] ?? 'Doctor',
+                            receiverId: widget.doctorId,
+                            receiverName: widget.doctorData['name'] ?? 'Doctor',
+                            isDoctor: false,
                           ),
                         ),
                       );

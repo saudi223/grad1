@@ -181,7 +181,7 @@ class _PatientHomeState extends State<PatientHome> {
           IconButton(onPressed: logout, icon: Icon(Icons.logout, size: 30.r))
         ],
       ),
-      body: _widgetOptions.elementAt(_currentIndex),
+      body:_widgetOptions.elementAt(_currentIndex),
     );
   }
 }

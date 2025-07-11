@@ -1,118 +1,93 @@
-// ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
-
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:graduate/auth/chat_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ChatPage extends StatefulWidget {
-  const ChatPage({super.key, required doctorId, required doctorName});
+  final String receiverId;
+  final String receiverName;
+  final bool isDoctor;
+
+  const ChatPage({
+    required this.receiverId,
+    required this.receiverName,
+    required this.isDoctor,
+    Key? key,
+  }) : super(key: key);
 
   @override
   State<ChatPage> createState() => _ChatPageState();
 }
 
 class _ChatPageState extends State<ChatPage> {
-  final TextEditingController _controller = TextEditingController();
+  final TextEditingController _messageController = TextEditingController();
+  final ChatService _chatService = ChatService();
+  late final String currentUserId;
+  String? _error;
+  String? _chatId;
 
-  // كل الرسائل
-  final List<_ChatMessage> _messages = [];
+  @override
+  void initState() {
+    super.initState();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      _error = 'User not authenticated';
+      return;
+    }
 
-  void _sendMessage() {
-    final text = _controller.text.trim();
-    if (text.isEmpty) return;
-
-    setState(() {
-      // أضف رسالة المستخدم
-      _messages.add(_ChatMessage(
-        text: text,
-        isUser: true,
-      ));
-      _controller.clear();
-
-      // رد تلقائي
-      _messages.add(_ChatMessage(
-        text: _generateBotReply(text),
-        isUser: false,
-      ));
-    });
+    currentUserId = user.uid;
+    _chatId = _chatService.getChatId(currentUserId, widget.receiverId);
+    _printDebugInfo();
+    _verifyChatExists();
   }
 
-  String _generateBotReply(String userMessage) {
-    // رد افتراضي بسيط
-    return "تم استلام رسالتك وسيتم الرد من خلال الدكتور في أقرب وقت: \"$userMessage\" ✅";
+  Future<void> _verifyChatExists() async {
+    try {
+      final chatDoc = await FirebaseFirestore.instance
+          .collection('chats')
+          .doc(_chatId)
+          .get();
+
+      if (!chatDoc.exists) {
+        // Create chat document if it doesn't exist
+        await FirebaseFirestore.instance
+            .collection('chats')
+            .doc(_chatId)
+            .set({
+          'participants': {
+            currentUserId: true,
+            widget.receiverId: true
+          },
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (e) {
+      print('Error verifying chat: $e');
+      setState(() {
+        _error = 'Failed to initialize chat';
+      });
+    }
+  }
+
+  void _printDebugInfo() {
+    print('Chat Debug Info:');
+    print('Current User ID: $currentUserId');
+    print('Receiver ID: ${widget.receiverId}');
+    print('Chat ID: $_chatId');
+    print('Is Doctor: ${widget.isDoctor}');
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        elevation: 5.r,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        titleSpacing: 0,
-        title: Padding(
-          padding:  EdgeInsets.only(left: 0, bottom: 5.r),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 26.r,
-                backgroundImage: AssetImage(
-                  'assets/images/profile-icon-design-free-vector.jpg',
-                ),
-              ),
-              SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'AHMED',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18.r,
-                    ),
-                  ),
-                  Text(
-                    'Diabetic patient',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 17.r,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
+        title: Text(widget.receiverName),
       ),
       body: Column(
         children: [
           Expanded(
-            child: ListView.builder(
-              padding: EdgeInsets.all(12),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final msg = _messages[index];
-                return Align(
-                  alignment: msg.isUser
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
-                  child: Container(
-                    margin: EdgeInsets.symmetric(vertical: 4),
-                    padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: msg.isUser ? Colors.blue : Colors.grey[300],
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      msg.text,
-                      style: TextStyle(
-                        color: msg.isUser ? Colors.white : Colors.black,
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
+            child: _buildMessageList(),
           ),
           _buildMessageInput(),
         ],
@@ -120,58 +95,174 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  Widget _buildMessageInput() {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            blurRadius: 10,
-            offset: Offset(0, -2),
-          ),
-        ],
+  Widget _buildMessageList() {
+    if (_error != null) {
+      return Center(child: Text(_error!));
+    }
+
+    if (_chatId == null) {
+      return Center(child: CircularProgressIndicator());
+    }
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('chats')
+          .doc(_chatId)
+          .collection('messages')
+          .orderBy('timestamp', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          print('Stream Error: ${snapshot.error}');
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('Error loading messages: ${snapshot.error}'),
+                TextButton(
+                  onPressed: () => setState(() {}),
+                  child: Text('Retry'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Center(child: Text('No messages yet'));
+        }
+
+        return ListView.builder(
+          padding: EdgeInsets.all(16.w),
+          reverse: true,
+          itemCount: snapshot.data!.docs.length,
+          itemBuilder: (context, index) {
+            final doc = snapshot.data!.docs[index];
+            final data = doc.data() as Map<String, dynamic>;
+            final isMe = data['senderId'] == currentUserId;
+
+            return _buildMessageBubble(data, isMe);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildMessageBubble(Map<String, dynamic> data, bool isMe) {
+    return Align(
+      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: EdgeInsets.symmetric(vertical: 4.h),
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+        decoration: BoxDecoration(
+          color: isMe ? Colors.blue[200] : Colors.grey[300],
+          borderRadius: BorderRadius.circular(12.r),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(data['message']?.toString() ?? ''),
+            SizedBox(height: 4.h),
+            Text(
+              _formatTime(data['timestamp']?.toDate()),
+              style: TextStyle(fontSize: 10.sp, color: Colors.grey),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildMessageInput() {
+    return Padding(
+      padding: EdgeInsets.all(8.w),
       child: Row(
         children: [
           Expanded(
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(25),
-              ),
-              child: TextField(
-                controller: _controller,
-                decoration: InputDecoration(
-                  hintText: 'اكتب رسالتك...',
-                  border: InputBorder.none,
-                ),
+            child: TextField(
+              controller: _messageController,
+              decoration: InputDecoration(
+                hintText: 'Type your message...',
+                border: OutlineInputBorder(),
               ),
             ),
           ),
-          SizedBox(width: 8),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.blue,
-              borderRadius: BorderRadius.circular(25),
-            ),
-            child: IconButton(
-              icon: Icon(Icons.send_outlined, color: Colors.white),
-              onPressed: _sendMessage,
-            ),
-          )
+          IconButton(
+            icon: Icon(Icons.send),
+            onPressed: _sendMessage,
+          ),
         ],
       ),
     );
   }
-}
 
-// نموذج الرسالة
-class _ChatMessage {
-  final String text;
-  final bool isUser;
+  Future<void> _sendMessage() async {
+    if (_messageController.text.trim().isEmpty || _chatId == null) return;
 
-  _ChatMessage({required this.text, required this.isUser});
+    try {
+      await FirebaseFirestore.instance
+          .collection('chats')
+          .doc(_chatId)
+          .collection('messages')
+          .add({
+        'senderId': currentUserId,
+        'receiverId': widget.receiverId,
+        'message': _messageController.text.trim(),
+        'timestamp': FieldValue.serverTimestamp(),
+        'read': false,
+      });
+
+      // Update last message in chat references
+      await _updateChatReferences();
+
+      _messageController.clear();
+    } catch (e) {
+      print('Error sending message: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to send message: ${e.toString()}')),
+      );
+    }
+  }
+
+  Future<void> _updateChatReferences() async {
+    final messageData = {
+      'lastMessage': _messageController.text.trim(),
+      'timestamp': FieldValue.serverTimestamp(),
+      'unreadCount': FieldValue.increment(1),
+    };
+
+    // Update doctor's reference
+    if (widget.isDoctor) {
+      await FirebaseFirestore.instance
+          .collection('doctors')
+          .doc(currentUserId)
+          .collection('patient_chats')
+          .doc(widget.receiverId)
+          .set(messageData, SetOptions(merge: true));
+    }
+    // Update patient's reference
+    else {
+      await FirebaseFirestore.instance
+          .collection('patients')
+          .doc(currentUserId)
+          .collection('doctor_chats')
+          .doc(widget.receiverId)
+          .set(messageData, SetOptions(merge: true));
+    }
+  }
+
+  String _formatTime(DateTime? time) {
+    if (time == null) return '';
+    return '${time.hour}:${time.minute.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    super.dispose();
+  }
 }
