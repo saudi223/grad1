@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:graduate/screens/chat_details_screen.dart';
-import 'package:graduate/screens/chats_screen.dart'; // Import your chat screen
+import 'package:graduate/screens/chats_screen.dart';
 
 class DoctorsStart extends StatefulWidget {
   const DoctorsStart({
@@ -82,7 +82,8 @@ class _DoctorsStartState extends State<DoctorsStart> {
                           builder: (context) => ChatPage(
                             receiverId: widget.doctorId,
                             receiverName: widget.doctorData['name'] ?? 'Doctor',
-                            isDoctor: false,
+                            isDoctor: false, // Current user is patient
+                            receiverRole: 'doctor', // Receiver is doctor
                           ),
                         ),
                       );

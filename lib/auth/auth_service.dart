@@ -3,10 +3,10 @@ import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class AuthService extends GetxController {
+class AuthService {
+  final FirebaseAuth _auth;
 
-
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  AuthService({FirebaseAuth? auth}) : _auth = auth ?? FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   FirebaseFirestore get firestore => _firestore;

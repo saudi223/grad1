@@ -3,12 +3,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:graduate/auth/auth_service.dart';
+import 'package:graduate/screens/chats_screen.dart';
 import 'package:graduate/screens/news.dart';
 import 'package:graduate/screens/sign_in.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:graduate/users/doctor_chat.dart';
 import 'package:graduate/users/doctor_info.dart';
 
 class DoctorHome extends StatefulWidget {
@@ -22,7 +22,7 @@ class _DoctorHomeState extends State<DoctorHome> {
   final List<Widget> _widgetOptions = [
     Center(child: Text('COURSE PAGE')),
     NewsScreen(),
-    DoctorChats(),
+    Chats(),
   ];
 
   int _currentIndex = 0;
@@ -147,7 +147,10 @@ class _DoctorHomeState extends State<DoctorHome> {
         leading: Icon(Icons.person, color: Colors.black),
         title: Text('My Profile', style: TextStyle(fontSize: 16.sp)),
         onTap: () {
-          Navigator.push(context, MaterialPageRoute(builder: (context)=>DoctorInfo()));
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) =>DoctorInfo()),
+          );
         },
       ),
       ListTile(

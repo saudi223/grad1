@@ -1,15 +1,11 @@
-// ignore_for_file: prefer_const_constructors
-
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:graduate/screens/chat_details_screen.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-
 class Chats extends StatefulWidget {
   const Chats({super.key});
-
 
   @override
   State<Chats> createState() => _ChatsState();
@@ -44,7 +40,6 @@ class _ChatsState extends State<Chats> {
       }
 
       userId = user.uid;
-
       await _fetchChatDoctors();
     } catch (e) {
       print('Error loading chats: $e');
@@ -57,7 +52,6 @@ class _ChatsState extends State<Chats> {
 
   Future<void> _fetchChatDoctors() async {
     try {
-      // Get doctor references from patient's chats collection
       final chatRefs = await FirebaseFirestore.instance
           .collection('patients')
           .doc(userId)
@@ -65,7 +59,6 @@ class _ChatsState extends State<Chats> {
           .orderBy('timestamp', descending: true)
           .get();
 
-      // Fetch complete doctor data for each chat
       final doctorFutures = chatRefs.docs.map((doc) async {
         final doctorDoc = await FirebaseFirestore.instance
             .collection('doctors')
@@ -75,10 +68,11 @@ class _ChatsState extends State<Chats> {
         if (doctorDoc.exists) {
           return {
             ...doctorDoc.data() as Map<String, dynamic>,
-            'chat_id': doc.id,
+            'doctor_id': doc.id, // Changed from chat_id to doctor_id
             'last_message': doc['lastMessage'],
             'last_message_time': _formatTimestamp(doc['timestamp']),
             'unread_count': doc['unreadCount'] ?? 0,
+            'receiver_role': 'doctor',
           };
         }
         return null;
@@ -242,12 +236,13 @@ class _ChatsState extends State<Chats> {
               context,
               MaterialPageRoute(
                 builder: (context) => ChatPage(
-                  receiverId: doctor['chat_id'],
+                  receiverId: doctor['doctor_id'], // Changed from chat_id
                   receiverName: doctor['name'],
                   isDoctor: false,
-                )
-              ), // MaterialPageRoute
-            ).then((_) => _loadUserAndChats()); // Refresh when returning
+                  receiverRole: doctor['receiver_role'] ?? 'doctor',
+                ),
+              ),
+            ).then((_) => _loadUserAndChats());
           },
         );
       },
