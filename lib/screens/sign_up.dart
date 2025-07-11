@@ -197,6 +197,15 @@ class _SignUpState extends State<SignUp> {
     super.dispose();
   }
 
+  bool _obscureText = true;
+
+  void _togglePasswordVisibility() {
+    setState(() {
+      _obscureText = !_obscureText;
+    });
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -272,8 +281,15 @@ class _SignUpState extends State<SignUp> {
                       // Password Field
                       TextFormField(
                         controller: _pwController,
-                        obscureText: true,
+                        obscureText: _obscureText,
                         decoration: InputDecoration(
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscureText ? Icons.visibility : Icons.visibility_off,
+                              color: Colors.grey,
+                            ),
+                            onPressed: _togglePasswordVisibility,
+                          ),
                           hintText: "*********",
                           labelText: "Password",
                           prefixIcon: Icon(Icons.lock_outlined, color: Color(0xff242E49)),
@@ -301,8 +317,15 @@ class _SignUpState extends State<SignUp> {
                       SizedBox(height: 60.h),
                       TextFormField(
                         controller: _confirmController,
-                        obscureText: true,
+                        obscureText: _obscureText,
                         decoration: InputDecoration(
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscureText ? Icons.visibility : Icons.visibility_off,
+                              color: Colors.grey,
+                            ),
+                            onPressed: _togglePasswordVisibility,
+                          ),
                           hintText: "*********",
                           labelText: "Confirm Password",
                           prefixIcon: Icon(Icons.lock_outlined, color: Color(0xff242E49)),

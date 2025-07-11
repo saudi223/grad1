@@ -1,3 +1,5 @@
+// ignore_for_file: prefer_const_constructors
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -134,6 +136,14 @@ class _SignInState extends State<SignIn> {
     super.dispose();
   }
 
+  bool _obscureText = true;
+
+  void _togglePasswordVisibility() {
+    setState(() {
+      _obscureText = !_obscureText;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -212,8 +222,15 @@ class _SignInState extends State<SignIn> {
                       // Password Field
                       TextFormField(
                         controller: _pwController,
-                        obscureText: true,
+                        obscureText: _obscureText,
                         decoration: InputDecoration(
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscureText ? Icons.visibility : Icons.visibility_off,
+                              color: Colors.grey,
+                            ),
+                            onPressed: _togglePasswordVisibility,
+                          ),
                           hintText: "*********",
                           labelText: "Password",
                           prefixIcon: Icon(
