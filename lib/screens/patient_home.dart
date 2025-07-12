@@ -12,7 +12,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:graduate/users/doctors_list.dart';
 import 'package:graduate/users/patient_appointments.dart';
 import 'package:graduate/users/patient_info.dart';
-
+import 'model_predict.dart';
 
 class PatientHome extends StatefulWidget {
   const PatientHome({super.key});
@@ -24,7 +24,8 @@ class PatientHome extends StatefulWidget {
 class _PatientHomeState extends State<PatientHome> {
   final List<Widget> _widgetOptions = [
     DoctorsListScreen(), // Shows list of doctors
-    Center(child: Text('COURSE PAGE')),
+    // Center(child: Text('COURSE PAGE')),
+    AnalyzeVideoPage(),
     NewsScreen(),
     Chats(),
   ];
@@ -46,7 +47,7 @@ class _PatientHomeState extends State<PatientHome> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer:Drawer(
+      drawer: Drawer(
         width: 250.w,
         child: StreamBuilder<DocumentSnapshot>(
           stream: FirebaseFirestore.instance
@@ -55,7 +56,8 @@ class _PatientHomeState extends State<PatientHome> {
               .snapshots(),
           builder: (context, snapshot) {
             final patientData = snapshot.data?.data() as Map<String, dynamic>?;
-            final email = FirebaseAuth.instance.currentUser?.email ?? 'No email';
+            final email =
+                FirebaseAuth.instance.currentUser?.email ?? 'No email';
             final name = patientData?['name'] ?? 'Patient Name';
 
             return ListView(
@@ -72,8 +74,9 @@ class _PatientHomeState extends State<PatientHome> {
                         radius: 30.r,
                         backgroundImage: patientData?['profile_image'] != null
                             ? NetworkImage(patientData!['profile_image'])
-                            : AssetImage('assets/images/profile-icon-design-free-vector.jpg')
-                        as ImageProvider,
+                            : AssetImage(
+                                    'assets/images/profile-icon-design-free-vector.jpg')
+                                as ImageProvider,
                       ),
                       SizedBox(height: 10.h),
                       Text(
@@ -111,7 +114,8 @@ class _PatientHomeState extends State<PatientHome> {
                     Navigator.pop(context); // Close the drawer
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => PatientAppointments()),
+                      MaterialPageRoute(
+                          builder: (context) => PatientAppointments()),
                     );
                   },
                 ),
@@ -122,14 +126,16 @@ class _PatientHomeState extends State<PatientHome> {
                     Navigator.pop(context);
                   },
                 ),
-                Padding(padding: EdgeInsets.only(top: 330.r),child:
-                ListTile(
-                  leading: Icon(Icons.logout_outlined),
-                  title: Text('logout'),
-                  onTap: () {
-                    logout();
-                  },
-                ),)
+                Padding(
+                  padding: EdgeInsets.only(top: 330.r),
+                  child: ListTile(
+                    leading: Icon(Icons.logout_outlined),
+                    title: Text('logout'),
+                    onTap: () {
+                      logout();
+                    },
+                  ),
+                )
               ],
             );
           },
@@ -141,10 +147,9 @@ class _PatientHomeState extends State<PatientHome> {
         items: [
           BottomNavigationBarItem(
             activeIcon:
-            Icon(Icons.medical_services_outlined, color: Colors.blue),
+                Icon(Icons.medical_services_outlined, color: Colors.blue),
             icon: Icon(Icons.medical_services_outlined, color: Colors.black),
             label: "Doctors",
-
           ),
           BottomNavigationBarItem(
             activeIcon: Icon(Icons.live_tv_outlined, color: Colors.blue),
@@ -181,7 +186,7 @@ class _PatientHomeState extends State<PatientHome> {
           IconButton(onPressed: logout, icon: Icon(Icons.logout, size: 30.r))
         ],
       ),
-      body:_widgetOptions.elementAt(_currentIndex),
+      body: _widgetOptions.elementAt(_currentIndex),
     );
   }
 }
