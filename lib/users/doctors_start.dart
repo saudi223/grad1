@@ -75,18 +75,45 @@ class _DoctorsStartState extends State<DoctorsStart> {
                 } else {
                   final isBooked = snapshot.data ?? false;
                   return ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ChatPage(
-                            receiverId: widget.doctorId,
-                            receiverName: widget.doctorData['name'] ?? 'Doctor',
-                            isDoctor: false, // Current user is patient
-                            receiverRole: 'doctor', // Receiver is doctor
+                    onPressed: () async {
+                      // First create the chat document if it doesn't exist
+                      final chatId = '${widget.userId}_${widget.doctorId}'; // or vice versa
+
+                      try {
+                        // Check if chat exists
+                        final chatDoc = await FirebaseFirestore.instance
+                            .collection('chats')
+                            .doc(chatId)
+                            .get();
+
+                        if (!chatDoc.exists) {
+                          await FirebaseFirestore.instance
+                              .collection('chats')
+                              .doc(chatId)
+                              .set({
+                            'participants': [widget.userId, widget.doctorId],
+                            'createdAt': FieldValue.serverTimestamp(),
+                          });
+                        }
+
+                        // Navigate to chat screen
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ChatPage(
+                              receiverId: widget.doctorId,
+                              receiverName: widget.doctorData['name'] ?? 'Doctor',
+                              isDoctor: false,
+                              receiverRole: 'doctor',
+                              
+                            ),
                           ),
-                        ),
-                      );
+                        );
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Failed to start chat: $e')),
+                        );
+                      }
                     },
                     child: Text(
                       isBooked ? 'Start Chat' : 'Book & Chat',

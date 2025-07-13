@@ -1,50 +1,91 @@
-// ignore_for_file: prefer_const_constructors
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DoctorDetailsScreen extends StatefulWidget {
-  const DoctorDetailsScreen({super.key,required this.doctorData,required this.doctorId,required this.userId});
+  const DoctorDetailsScreen({
+    super.key,
+    required this.doctorData,
+    required this.doctorId,
+    required this.userId,
+  });
 
   final Map<String, dynamic> doctorData;
   final String doctorId;
   final String userId;
-
 
   @override
   State<DoctorDetailsScreen> createState() => _DoctorDetailsScreenState();
 }
 
 class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
-  late Future<bool?> bookedStatusFuture;
+  bool _isBooked = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    bookedStatusFuture = getDoctorBookedStatus(
-      userId: widget.userId,
-      doctorId: widget.doctorId,
-    );
+    _checkBookingStatus();
   }
 
-  void refreshBookedStatus() {
+  Future<void> _checkBookingStatus() async {
+    try {
+      final docSnapshot = await FirebaseFirestore.instance
+          .collection('patients')
+          .doc(widget.userId)
+          .collection('booked_doctors')
+          .doc(widget.doctorId)
+          .get();
+
+      setState(() {
+        _isBooked = docSnapshot.exists;
+      });
+    } catch (e) {
+      print("Error checking booking status: $e");
+    }
+  }
+
+  Future<void> _bookAppointment() async {
     setState(() {
-      bookedStatusFuture = getDoctorBookedStatus(
-        userId: widget.userId,
-        doctorId: widget.doctorId,
-      );
+      _isLoading = true;
     });
-  }
 
+    try {
+      await FirebaseFirestore.instance
+          .collection('patients')
+          .doc(widget.userId)
+          .collection('booked_doctors')
+          .doc(widget.doctorId)
+          .set({
+        'bookedAt': FieldValue.serverTimestamp(),
+        'doctorName': widget.doctorData['name'],
+      });
+
+      setState(() {
+        _isBooked = true;
+        _isLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Appointment booked successfully!')),
+      );
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Booking failed: $e')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Doctor Details'),
+        title: const Text('Doctor Details'),
       ),
       body: Padding(
-        padding: EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -53,61 +94,34 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                 radius: 60,
                 backgroundImage: widget.doctorData['profile_image'] != null
                     ? NetworkImage(widget.doctorData['profile_image'])
-                    : AssetImage('assets/images/male-doctor-smiling-happy-face-600nw-2481032615.webp') as ImageProvider,
+                    : const AssetImage('assets/images/male-doctor-smiling-happy-face-600nw-2481032615.webp')
+                as ImageProvider,
               ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             _buildDetailRow('Name', widget.doctorData['name'] ?? 'N/A'),
             _buildDetailRow('Specialty', widget.doctorData['specialty'] ?? 'N/A'),
             _buildDetailRow('Phone', widget.doctorData['phone_number'] ?? 'N/A'),
-            Spacer(),
-            FutureBuilder<bool?>(
-              future: bookedStatusFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Container();
-                } else if (snapshot.hasError) {
-                  return Text('Error loading booking status');
-                } else {
-                  final isBooked = snapshot.data ?? false;
-                  if (isBooked) {
-                    return Center(
-                      child: Text(
-                        'Already Booked',
-                        style: TextStyle(
-                          color: Colors.green,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                    );
-                  } else {
-                    return ElevatedButton(
-                      onPressed: () async {
-                        try {
-                          await FirebaseFirestore.instance
-                              .collection('patients')
-                              .doc(widget.userId)
-                              .collection('booked_doctors')
-                              .doc(widget.doctorId)
-                              .set({
-                            'bookedAt': FieldValue.serverTimestamp(),
-                            'doctorName': widget.doctorData['name'],
-                          });
-                        } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Booking failed: $e')),
-                          );
-                        }
-                      },
-                      child: Text('Book Appointment'),
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: Size(double.infinity, 50),
-                      ),
-                    );
-                  }
-                }
-              },
+            const Spacer(),
+            _isBooked
+                ? Center(
+              child: Text(
+                'Already Booked',
+                style: TextStyle(
+                  color: Colors.green,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+            )
+                : ElevatedButton(
+              onPressed: _isLoading ? null : _bookAppointment,
+              child: _isLoading
+                  ? const CircularProgressIndicator()
+                  : const Text('Book Appointment'),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 50),
+              ),
             ),
           ],
         ),
@@ -117,69 +131,16 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
 
   Widget _buildDetailRow(String label, String value) {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: TextStyle(color: Colors.grey)),
-          SizedBox(height: 4),
-          Text(value, style: TextStyle(fontSize: 18)),
-          Divider(),
+          Text(label, style: const TextStyle(color: Colors.grey)),
+          const SizedBox(height: 4),
+          Text(value, style: const TextStyle(fontSize: 18)),
+          const Divider(),
         ],
       ),
     );
-  }
-}
-
-Future<void> addDoctorForUser({
-  required String userId,
-  required String doctorId,
-  required Map<String, dynamic> data,
-}) async {
-  try {
-    final updatedData = {
-      ...data,
-      'booked': true,
-    };
-
-    final docRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .collection('doctors')
-        .doc(doctorId);
-
-    await docRef.set(updatedData);
-
-    print("✅ Doctor data added successfully under users/$userId/doctors/$doctorId");
-  } catch (e) {
-    print("❌ Failed to add doctor data: $e");
-  }
-}
-
-
-Future<bool?> getDoctorBookedStatus({
-  required String userId,
-  required String doctorId,
-}) async {
-  try {
-    final docRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .collection('doctors')
-        .doc(doctorId);
-
-    final docSnapshot = await docRef.get();
-
-    if (docSnapshot.exists) {
-      final data = docSnapshot.data();
-      if (data != null && data.containsKey('booked')) {
-        return data['booked'] as bool?;
-      }
-    }
-
-    return null;
-  } catch (e) {
-    print("❌ Failed to fetch doctor booked status: $e");
-    return null;
   }
 }
